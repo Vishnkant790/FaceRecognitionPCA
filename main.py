@@ -1,16 +1,26 @@
-# This is a sample Python script.
+import os
+import cv2
+import matplotlib.pyplot as plt
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+DATASET_PATH = "data/raw/dataset/faces"
 
+person_name = "Aamir"
+person_folder = os.path.join(DATASET_PATH, person_name)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+print(person_folder)
+person_images = os.listdir(person_folder)
+print(person_images)
 
+image_name = person_images[0]
+image_path = os.path.join(person_folder, image_name)
+print(image_name)
+print(image_path)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+print(type(image))
+print(image.shape)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+plt.imshow(image, cmap='gray')
+plt.title(person_name)
+plt.axis('off')
+plt.show()
