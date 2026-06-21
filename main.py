@@ -6,9 +6,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
-
+IMPOSTER_PATH = "data/raw/imposters"
 DATASET_PATH = "data/raw/dataset/faces"
+
+
+
 IMAGE_SIZE = (100, 100)
 
 
@@ -57,7 +61,6 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42,
     stratify=labels
 )
-
 k_values = [10, 20, 30, 40, 50, 75, 100, 150]
 accuracies = []
 
@@ -89,8 +92,72 @@ plt.grid(True)
 plt.savefig("accuracy_vs_k.png", dpi=300)
 plt.show()
 
+best_k = 100
+pca = PCA(n_components=best_k, whiten=True, random_state=42)
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca = pca.transform(X_test)
+
+ann = MLPClassifier(
+    hidden_layer_sizes=(100,),
+    max_iter=1000,
+    random_state=42
+)
+
+ann.fit(X_train_pca, y_train)
+
+CONFIDENCE_THRESHOLD = 0.90
+
+probabilities = ann.predict_proba(X_test_pca)
+
+for i in range(10):
+    max_confidence = np.max(probabilities[i])
+    predicted_label = np.argmax(probabilities[i])
+    actual_label = y_test[i]
+
+    if max_confidence < CONFIDENCE_THRESHOLD:
+        prediction = "Not enrolled"
+    else:
+        prediction = label_names[predicted_label]
+
+    print("Actual:", label_names[actual_label])
+    print("Predicted:", prediction)
+    print("Confidence:", max_confidence)
+    print("---")
 
 print("Training data:", X_train.shape)
 print("Testing data:", X_test.shape)
 print("Training labels:", y_train.shape)
 print("Testing labels:", y_test.shape)
+print("Confidence threshold:", CONFIDENCE_THRESHOLD)
+
+print("Testing imposter images")
+
+
+for image_name in os.listdir(IMPOSTER_PATH):
+    image_path = os.path.join(IMPOSTER_PATH, image_name)
+
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    if image is None:
+        continue
+
+    image = cv2.resize(image, IMAGE_SIZE)
+    image_vector = image.flatten().reshape(1, -1)
+
+    image_pca = pca.transform(image_vector)
+
+    probabilities = ann.predict_proba(image_pca)[0]
+
+    max_confidence = np.max(probabilities)
+    predicted_label = np.argmax(probabilities)
+
+    if max_confidence < CONFIDENCE_THRESHOLD:
+        prediction = "Not enrolled"
+    else:
+        prediction = label_names[predicted_label]
+
+    print("Image:", image_name)
+    print("Predicted:", prediction)
+    print("Confidence:", max_confidence)
+    print("---")
+
